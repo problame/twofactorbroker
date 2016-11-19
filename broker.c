@@ -11,15 +11,19 @@
 #include <sys/un.h>
 
 int broker_server(char *socket_path);
-int transform_password(char *pw, FILE *out);
+
+int dummy_transform_password(char *pw, FILE *out);
+int yubikey_transform_password(char *pw, FILE *out);
+
+static char *socket_path = NULL;
+int(*transformer)(char*, FILE*) = NULL;
 
 int subcommand_broker(int argc, char *args[]) {
-    
-    char *socket_path = NULL;
     
     int longopt_index = 0;
     static struct option long_options[] = {
         {"socketPath", required_argument, 0, 0},
+        {"platform", required_argument, 0, 0}, // how to make this optional without coredumps?
         {0, 0, 0, 0}
     }; 
 
@@ -36,12 +40,23 @@ int subcommand_broker(int argc, char *args[]) {
                 assert(strequal(long_options[longopt_index].name, "socketPath"));
                 socket_path = optarg;
                 break;
+            case 1:
+                assert(strequal(long_options[longopt_index].name, "platform"));
+                if (strequal(optarg, "ykpersonalize")) {
+                    transformer = &yubikey_transform_password;
+                } else if (strequal(optarg, "dummy")) {
+                    transformer = &dummy_transform_password;
+                }
+                break;
             default:
               assert(false);
               break;  
         }
 
-    } 
+    }
+
+    assert(transformer);
+    assert(socket_path);
 
     return broker_server(socket_path);;
 
@@ -114,20 +129,14 @@ int broker_server(char *socket_path) {
        
        assert(((char*)msg_buf)[MAX_MSGLEN-1] == '\0');
 
-       transform_password(msg_buf, cfd);
+       int transform_result;
+       if ((transform_result = (*transformer)(msg_buf, cfd)) != 0) {
+            fprintf(stderr, "error transforming password\n");     
+       }
        
        fclose(cfd);
 
     }
 
-}
-
-int transform_password(char *pw, FILE *out) {
-    assert(pw);
-    assert(out);
-    for (int c= strlen(pw)-1; c >= 0; c--) {
-        fprintf(out, "%c", pw[c]);
-    }
-    return 0;
 }
 
