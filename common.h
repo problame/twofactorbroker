@@ -8,3 +8,9 @@ void exit_error(char *error);
 
 // use: __attribute__((cleanup(free_ptr)))
 void free_ptr(void **ptr);
+
+// Variables used by transformer implementation. arguments passed after --
+extern int   transformer_argc;
+extern char **transformer_args; // to use getopt in the transformer, the first array entry is not an option (like in main())
+
+

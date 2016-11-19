@@ -12,11 +12,15 @@
 
 int broker_server(char *socket_path);
 
-int dummy_transform_password(char *pw, FILE *out);
-int yubikey_transform_password(char *pw, FILE *out);
+int dummy_transform_password(char *pw, size_t pw_len, FILE *out);
+int yubikey_transform_password(char *pw, size_t pw_len, FILE *out);
 
 static char *socket_path = NULL;
-int(*transformer)(char*, FILE*) = NULL;
+
+// Dynamic transfomers
+int(*transformer)(char*, size_t, FILE*) = NULL;
+int   transformer_argc = 0;
+char **transformer_args = NULL;
 
 int subcommand_broker(int argc, char *args[]) {
     
@@ -57,6 +61,11 @@ int subcommand_broker(int argc, char *args[]) {
 
     assert(transformer);
     assert(socket_path);
+
+    if (optind < argc) {
+        transformer_argc = argc - (optind-1);
+        transformer_args = args + optind - 1; // 0th entry must be not an optin for getopt
+    }
 
     return broker_server(socket_path);;
 
@@ -130,7 +139,7 @@ int broker_server(char *socket_path) {
        assert(((char*)msg_buf)[MAX_MSGLEN-1] == '\0');
 
        int transform_result;
-       if ((transform_result = (*transformer)(msg_buf, cfd)) != 0) {
+       if ((transform_result = (*transformer)(msg_buf, strlen(msg_buf), cfd)) != 0) {
             fprintf(stderr, "error transforming password\n");     
        }
        
