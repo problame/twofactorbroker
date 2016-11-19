@@ -1,0 +1,9 @@
+*
+.*
+!**/*.c
+!**/*.h
+!Makefile
+!.vimrc
+!.gitignore
+
+
