@@ -89,7 +89,12 @@ int subcommand_client(int argc, char *args[]) {
 
     assert(((char*)msg_buf)[MAX_MSGLEN-1] == '\0');
 
-    printf("%s\n", msg_buf);
+    if (nbytes == 0) {
+        fprintf(stderr, "broker closed the connection, assuming error\n");
+    } else {
+        printf("%s\n", msg_buf);
+    }
+
     exit_code = 0;
 
 efreebuf:
