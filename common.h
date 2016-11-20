@@ -4,8 +4,8 @@
 #pragma once
 
 #define strequal(a, b) strcmp(a,b) == 0
-extern size_t MAX_MSGLEN;
-extern size_t MAX_SALTLEN;
+extern const size_t MAX_MSGLEN;
+extern const size_t MAX_SALTLEN;
 
 void exit_error(char *error);
 
