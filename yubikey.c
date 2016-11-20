@@ -159,4 +159,7 @@ ereturn:
     return -1;
 }
 
-
+int yubikey_provision(int argc, char **args) {
+    fprintf(stderr, "Fake provisioning...\n");
+    return 1;
+}

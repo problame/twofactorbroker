@@ -10,6 +10,7 @@
 
 int subcommand_broker(int argc, char *args[]);
 int subcommand_client(int argc, char *args[]);
+int subcommand_provision(int argc, char *args[]);
 
 static void sigint_handler(int signum) {
     fprintf(stderr, "exiting...\n");
@@ -44,6 +45,11 @@ int main(int argc, char *argv[]) {
     if (strequal("client", subcommand)) {
         return subcommand_client(argc-1, argv+1);
     }
+
+    if (strequal("provision", subcommand)) {
+        return subcommand_provision(argc-1, argv+1);
+    }
+
 
     exit(1);
 }
