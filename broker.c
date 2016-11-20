@@ -1,4 +1,5 @@
 #include "common.h"
+
 #include <getopt.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -12,15 +13,12 @@
 
 int broker_server(char *socket_path);
 
+int dummy_init(int argc, char **args);
 int dummy_transform_password(char *pw, size_t pw_len, FILE *out);
+int yubikey_init(int argc, char **args);
 int yubikey_transform_password(char *pw, size_t pw_len, FILE *out);
 
 static char *socket_path = NULL;
-
-// Dynamic transfomers
-int(*transformer)(char*, size_t, FILE*) = NULL;
-int   transformer_argc = 0;
-char **transformer_args = NULL;
 
 int subcommand_broker(int argc, char *args[]) {
     
@@ -47,9 +45,11 @@ int subcommand_broker(int argc, char *args[]) {
             case 1:
                 assert(strequal(long_options[longopt_index].name, "platform"));
                 if (strequal(optarg, "ykpersonalize")) {
-                    transformer = &yubikey_transform_password;
+                    transformer.init = &yubikey_init; 
+                    transformer.handler = &yubikey_transform_password;
                 } else if (strequal(optarg, "dummy")) {
-                    transformer = &dummy_transform_password;
+                    transformer.init = &dummy_init;
+                    transformer.handler = &dummy_transform_password;
                 }
                 break;
             default:
@@ -59,13 +59,15 @@ int subcommand_broker(int argc, char *args[]) {
 
     }
 
-    assert(transformer);
+    assert(transformer.init);
+    assert(transformer.handler);
     assert(socket_path);
 
-    if (optind < argc) {
-        transformer_argc = argc - (optind-1);
-        transformer_args = args + optind - 1; // 0th entry must be not an optin for getopt
-    }
+    int ret = (*transformer.init)(argc - (optind -1), args + (optind -1));
+    if (ret != 0) {
+        fprintf(stderr, "Transformer failed to initialize");
+        return ret;
+    } 
 
     return broker_server(socket_path);;
 
@@ -139,7 +141,7 @@ int broker_server(char *socket_path) {
        assert(((char*)msg_buf)[MAX_MSGLEN-1] == '\0');
 
        int transform_result;
-       if ((transform_result = (*transformer)(msg_buf, strlen(msg_buf), cfd)) != 0) {
+       if ((transform_result = (*transformer.handler)(msg_buf, strlen(msg_buf), cfd)) != 0) {
             fprintf(stderr, "error transforming password\n");     
        }
        

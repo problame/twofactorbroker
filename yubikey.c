@@ -11,14 +11,13 @@
 
 #include <gcrypt.h>
 
-int yubikey_transform_password(char *pw, size_t pw_len, FILE *out) {
+// yubikey transformer configuration
+static int yk_slot = SLOT_CHAL_HMAC1;
+static int passphrase_hmac_algo = GCRY_MAC_HMAC_SHA512;
+static int challenge_hmac_algo = GCRY_MAC_HMAC_SHA512;
+static char *salt_file_path = NULL;
 
-    int ret_code = 0;
-    int yk_slot = -1;
-    int passphrase_hmac_algo = 0;
-    int challenge_hmac_algo = 0;
-    char *salt_file_path = NULL;
-
+int yubikey_init(int argc, char **args) {
     int longopt_index;
     static struct option long_options[] = {
         {"slot", required_argument, 0, 0},
@@ -30,7 +29,7 @@ int yubikey_transform_password(char *pw, size_t pw_len, FILE *out) {
 
     optind = 1; // Reset optind <=> reset getopt
     while (true) {
-        int c = getopt_long(transformer_argc, transformer_args, "", long_options, &longopt_index);
+        int c = getopt_long(argc, args, "", long_options, &longopt_index);
         if (c == -1) {
             break;
         }
@@ -75,6 +74,15 @@ int yubikey_transform_password(char *pw, size_t pw_len, FILE *out) {
         goto ereturn;
     }
 
+    return 0;
+
+ereturn:
+    return -1;
+}
+
+int yubikey_transform_password(char *pw, size_t pw_len, FILE *out) {
+
+    int ret_code = 0;
     YK_KEY *yk;
 
     if (yk_init() < 0) {
