@@ -6,6 +6,7 @@
 #define strequal(a, b) strcmp(a,b) == 0
 extern const size_t MAX_MSGLEN;
 extern const size_t MAX_SALTLEN;
+extern const size_t MAX_PWLEN;
 
 void exit_error(char *error);
 
@@ -21,3 +22,4 @@ struct transformer_t {
 extern struct transformer_t transformer;
 extern int setup_transformer(char *name);
 
+char *secure_getpass(const char *prompt);
