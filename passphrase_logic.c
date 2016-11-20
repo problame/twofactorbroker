@@ -1,9 +1,10 @@
 #include "passphrase_logic.h"
-
+#include "common.h"
 #include "util.h"
 
 #include <stdint.h>
 #include <assert.h>
+
 #include <gcrypt.h>
 
 /* Private function prototypes */
@@ -16,8 +17,6 @@ int new_hmac(int algo,
              const void*key, size_t key_len,
              const void *buffer, size_t buffer_len,
              void **digest, size_t *digest_len);
-
-int load_salt(void **salt, size_t *salt_len);
 
 /* Public */
 
@@ -158,10 +157,78 @@ out00:
     return errno_val == 0 ? -1 : -errno_val;
 }
 
-int load_salt(void **salt, size_t *salt_len) {
-    assert(salt);
-    const char *fakeSalt = "SHOULD LOAD SALT FROM DISK";
-    *salt = gcry_malloc_secure(strlen(fakeSalt));
-    *salt_len = strlen(fakeSalt);
+int store_salt(const char *path, const void *pw, size_t pw_len,
+              void *salt, size_t salt_len)
+{
+    // TODO having this part be atomic would be great..
+    FILE *salt_file = fopen(path, "w");
+    if (salt_file == NULL) {
+        goto ereturn;
+    }
+
+    size_t nbytes = fwrite(salt, salt_len, 1, salt_file);
+    if (nbytes != salt_len || ferror(salt_file)) {
+        // a write error occurred
+        goto eclose;
+    }
+
+    if (fclose(salt_file) != 0) {
+        goto eclose;
+    }
+
     return 0;
+
+eclose:
+    fclose(salt_file);
+ereturn:
+    return -1;
+
+}
+
+int load_salt(const char *path, const void *pw, size_t pw_len,
+              void **salt, size_t *salt_len)
+{
+    assert(salt);
+    assert(salt_len);
+
+    int ret = 0;
+
+    FILE *salt_file = fopen(path, "r");
+    if (salt_file == NULL) {
+        goto ereturn;
+    }
+
+    void *salt_buf = gcry_malloc_secure(MAX_SALTLEN + 1); // one extra for the check fread, see below
+    if (salt_buf == NULL) {
+        goto eclose;
+    }
+    memset(salt_buf, 0, MAX_SALTLEN);
+
+    size_t nbytes = fread(salt_buf, 1, MAX_SALTLEN, salt_file);
+    if (!feof(salt_file) && ferror(salt_file)) {
+        // a read error occurred
+        goto ebuf;
+    }
+    if (nbytes == MAX_SALTLEN) {
+        fread((uint8_t*)salt_buf + MAX_SALTLEN, 1, 1, salt_file);
+        if (!feof(salt_file)) {
+            // the salt file is longer than what we can handle
+            ret = 1;
+        }
+    }
+
+    if (fclose(salt_file) != 0) {
+        goto ebuf;
+    }
+
+    *salt = salt_buf;
+    *salt_len = nbytes;
+    return ret;
+
+ebuf:
+    gcry_free(salt_buf);
+eclose:
+    fclose(salt_file);
+ereturn:
+    return -1;
 }

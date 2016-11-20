@@ -4,6 +4,8 @@
 
 #define strequal(a, b) strcmp(a,b) == 0
 extern size_t MAX_MSGLEN;
+extern size_t MAX_SALTLEN;
+
 void exit_error(char *error);
 
 // use: __attribute__((cleanup(free_ptr)))

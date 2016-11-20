@@ -13,7 +13,11 @@
 
 int initialize_crypto_lib();
 
-int load_salt(void **salt, size_t *salt_len);
+int load_salt(const char *path, const void *pw, size_t pw_len,
+              void **salt, size_t *salt_len);
+
+int store_salt(const char *path, const void *pw, size_t pw_len,
+              void *salt, size_t salt_len);
 
 int new_challenge(const void *pw, size_t pw_len,
                   const void *salt, size_t salt_len,
