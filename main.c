@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     struct sigaction sa = {};
     sa.sa_handler = sigint_handler;
     if (sigaction(SIGINT, &sa, NULL) == -1) {
-        perror("cannot register for SIGING");
+        perror("cannot register for SIGINT");
         exit(1);
     }
 
