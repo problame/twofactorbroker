@@ -13,11 +13,6 @@
 
 int broker_server(char *socket_path);
 
-int dummy_init(int argc, char **args);
-int dummy_transform_password(char *pw, size_t pw_len, FILE *out);
-int yubikey_init(int argc, char **args);
-int yubikey_transform_password(char *pw, size_t pw_len, FILE *out);
-
 static char *socket_path = NULL;
 
 int subcommand_broker(int argc, char *args[]) {
@@ -44,13 +39,7 @@ int subcommand_broker(int argc, char *args[]) {
                 break;
             case 1:
                 assert(strequal(long_options[longopt_index].name, "platform"));
-                if (strequal(optarg, "ykpersonalize")) {
-                    transformer.init = &yubikey_init; 
-                    transformer.handler = &yubikey_transform_password;
-                } else if (strequal(optarg, "dummy")) {
-                    transformer.init = &dummy_init;
-                    transformer.handler = &dummy_transform_password;
-                }
+                setup_transformer(optarg);
                 break;
             default:
               assert(false);
