@@ -81,7 +81,7 @@ int subcommand_client(int argc, char *args[]) {
         goto efreebuf;
     }
 
-    if (hdr.msg_flags && MSG_TRUNC) {
+    if (hdr.msg_flags & MSG_TRUNC) {
         fprintf(stderr, "received truncated message, probably too long");
         exit_code = 1;
         goto efreebuf;
